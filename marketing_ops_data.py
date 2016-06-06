@@ -3,9 +3,20 @@ import os
 
 import pandas as pd
 
+def correct_rating_dmc_col(df):
+    latest_row = df['requested_date'].idxmax()
+    df['Rating'] = df.loc[latest_row,'Rating']
+    df['Customer DMC'] = df.loc[latest_row,'Customer DMC']
+
+    return df
+
 
 def merge_df(df1,df2):
-	return df1.combine_first(df2)
+    df = df1.combine_first(df2)
+    df['requested_date'] = pd.to_datetime(df['requested_date'], errors = 'coerce')
+    df = df.groupby('Phone').apply(correct_rating_dmc_col)
+
+    return df
 
 
 
