@@ -112,9 +112,20 @@ def ops_delivery_data(filename,month):
 	delivery_df = df.copy(deep = True)
 	delivery_df = delivery_df[delivery_df['Delivery scheduled time'].notnull()]
 	delivery_df = delivery_df[delivery_df['Delivery scheduled time'].apply(lambda x: x.strftime('%Y-%m')) == month]
+        delivery_df['delivery_date'] = delivery_df['Delivery scheduled time'].apply(lambda x: x.date())
 
+#the following is optional code to shell out pickup and delivery data month-wise, pickup-delivery boy wise for a city
+'''        df = df[(df['City'] == 'Mumbai') & (df['requested_date'].apply(lambda x:x.strftime('%Y-%m')) == month) ]
+
+        pickup_pivot = df.pivot_table(index = 'Pickup by', columns = 'requested_date', values = 'Booking ID', aggfunc = 'count')
+        pickup_pivot.to_csv('Pickup.csv')
+
+        delivery_df = delivery_df[delivery_df['City'] == 'Mumbai']
+
+        delivery_pivot = delivery_df.pivot_table(index = 'Delivery by', columns = 'delivery_date', values = 'Booking ID', aggfunc = 'count')
+        delivery_pivot.to_csv('delivery.csv')
 	writer = pd.ExcelWriter(os.path.join(os.path.dirname(filename),'output\ops_delivery_data.xlsx'))
-
+'''
 	write_multiple_dfs(delivery_df,DB,writer,'Delivery by')
 	write_multiple_dfs(df,PB,writer,'Pickup by')
 	writer.save()
