@@ -1,4 +1,4 @@
-# DM_data_analysis
+# Automating time-consuming tasks using Python at work
 
-This includes all the data analysis projects done at DoorMint.
+
 
