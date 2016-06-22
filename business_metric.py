@@ -19,7 +19,7 @@ def calculate_nps(s):
 
 def nps(filename):
     #reading selected columns from the file
-    columns_to_use = ['Booking ID','Status','Feedback','Bad rating reason','City','requested_date']
+    columns_to_use = ['Booking ID','Status','requested_date','City','Feedback','Bad rating reason']
     df = pd.read_csv(filename, usecols = columns_to_use)
     #extracting only closed and service complete bookings
     df = df[df['Status'].isin(['service_complete','closed'])]
@@ -30,14 +30,19 @@ def nps(filename):
     df['nps'] = df['Feedback'].map(calculate_nps)
 
     #calculating nps and writing it to file
-    nps = df.groupby(['month','City'])['nps'].agg(['size','count','mean'])
+    nps = df.groupby(['month'])['nps'].agg(['size','count','mean'])
+    nps.rename(index = str, columns = {'size':'Total Bookings','count':'Total Bookings with Feedback','mean':'NPS'})
+    nps_city = df.groupby(['month','City'])['nps'].agg(['size','count','mean'])
+    nps_city.rename(index = str, columns = {'size':'Total Bookings','count':'Total Bookings with Feedback','mean':'NPS'})
+
     output_file = os.path.join(os.path.dirname(filename),'output\[nps].xlsx')
     writer = pd.ExcelWriter(output_file)
     nps.to_excel(writer, sheet_name = 'nps')
-    #total feedback to calculate percentage feedbacks in the bad feedback rating
-    total_feedbacks = df.groupby('month')['nps'].count()
+    nps_city.to_excel(writer, sheet_name = 'nps_city')
     
     #analyzing bad rating reason
+    #total feedback to calculate percentage feedbacks in the bad feedback rating
+    total_feedbacks = df.groupby('month')['nps'].count()
     #http://stackoverflow.com/questions/17116814/pandas-how-do-i-split-text-in-a-column-into-multiple-rows - used this answer to do the following analysis
     df = df[df['Bad rating reason'].notnull()]
     s = df['Bad rating reason'].str.split(',').apply(pd.Series, 1).stack()
@@ -45,6 +50,7 @@ def nps(filename):
     s.name = 'Bad rating reason'
     del df['Bad rating reason']
     df = df.join(s)
+
     bad_rating_reason = df.groupby(['month','Bad rating reason'])['Booking ID'].count()  
     bad_rating_reason = bad_rating_reason.div(total_feedbacks, level = 0)
     bad_rating_reason.to_frame().to_excel(writer, sheet_name = 'bad_rating_analysis')
@@ -65,7 +71,7 @@ def new_repeat(filename):
     columns_to_use = ['Booking ID','Phone','Status','requested_date','DM credits used','Amount','Discount amount']
     df = pd.read_csv(filename, usecols = columns_to_use) 
     df['requested_date'] = pd.to_datetime(df['requested_date'])
-    df = df[df['Status'].isin(['closed','service_complete'])]
+    df = df[df['Status'].isin(['closed','service_complete','in_service'])]
     df['Discount amount'].fillna(value = 0, inplace = True)
     #cashbacks are not included here...as they will be applied in future
     df['actual_amt_paid'] = df['Amount'] - df['Discount amount'] - [x if x>=0 else 0 for x in df['DM credits used']]
@@ -79,7 +85,7 @@ def new_repeat(filename):
 
     #getting virtual money depending on new/repeat groups
     grouped = df.groupby(['new/repeat','month'])
-    virtual_money = grouped.agg({'Booking ID':'count','virtual money':'sum'})
+    virtual_money = grouped.agg({'Booking ID':'count','Discount amount':'sum','DM credits used':'sum'})
     revenue = grouped.agg({'Amount':'count','Amount':'sum'})
 
     output_file = os.path.join(os.path.dirname(filename),'output\[new_repeat].xlsx')
@@ -89,7 +95,6 @@ def new_repeat(filename):
     revenue.to_excel(writer, sheet_name = 'revenue')
     
     writer.save()
-
 
 
 
@@ -138,6 +143,7 @@ def cohorts(filename):
     
     df['Discount amount'].fillna(value = 0, inplace = True)
     df['Actual Amount Paid'] = df['Amount'] - df['Discount amount'] - [x if x>0 else 0 for x in df['DM credits used']]
+
 
     df = df[df['booking_month'] <> '2016-06']
 
