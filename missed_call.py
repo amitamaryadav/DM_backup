@@ -49,7 +49,6 @@ def main():
     df['StartTime'] = pd.to_datetime(df['StartTime'])
     #pdb.set_trace()
     df = df.apply(f1, axis = 1)
-    df.to_csv('test.csv')
     df.drop('To',axis = 1,inplace = True)
     #df = df[df['StartTime'].dt.hour < 19]
     df.sort_values(['From','StartTime'], ascending = [True,True], inplace = True)
@@ -60,15 +59,13 @@ def main():
     print total
     print inb
     print out
-    print inb/float(total)
-    print out/float(total)
 
     s = pd.Series(l)
     pd.Series(missed_not_answered).to_csv('missed_not_answered.csv')
     
 
-    #s1 =  pd.qcut(s, 5)
-    #s1.to_csv('missed_calls2.csv')
+    s1 =  pd.qcut(s, 5)
+    s1.to_csv('missed_calls2.csv')
 
 
 if __name__=='__main__':
