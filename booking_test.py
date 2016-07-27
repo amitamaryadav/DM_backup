@@ -1,22 +1,43 @@
 import pandas as pd
 import sys
 import pdb
+import numpy as np
+
+
+def cancellation_slot(df):
+    if df['Cancellation time'] - df['requested_time'] < pd.Timedelta('-1 hours'):
+        df['cancel_slot'] = '<t-1hours'
+    elif df['Cancellation time'] - df['requested_time'] < pd.Timedelta('-30 minutes'):
+        df['cancel_slot'] = '<t-1 to t-.5 hour'
+    elif df['Cancellation time'] - df['requested_time'] < pd.Timedelta('0 hours'):
+        df['cancel_slot'] = '<t-.5 to t hour'
+    elif df['Cancellation time'] - df['requested_time'] <= pd.Timedelta('1 hours'):
+        df['cancel_slot'] = '<t-t+1hour'
+    elif df['Cancellation time'] - df['requested_time'] <= pd.Timedelta('2 hours'):
+        df['cancel_slot'] = 't+1-t+2hour'
+    else:
+        df['cancel_slot'] = '>t+2 hours'
+
+
+    return df
+
 
 
 def main():
     filename = sys.argv[1]
-    columns_to_use = ['Phone','Email','Customer name','requested_date','Discount amount','Amount','DM credits used','Status']
-    df = pd.read_csv(filename, usecols = columns_to_use)
+    #columns_to_use = ['Type','Phone','Email','Customer name','requested_date','Discount amount','Amount','DM credits used','Status','successful_bookings','total_revenue']
+    df = pd.read_csv(filename, skiprows = np.arange(1,110000))
+    pdb.set_trace()
+    df['requested_time'] = df['requested_time'].astype(int).astype(str) + ':00:00'
+    df['requested_time'] = pd.to_datetime(df['requested_date'] + ' ' + df['requested_time'])
+    df['Cancellation time'] = pd.to_datetime(df['Cancellation time'])
     df['requested_date'] = pd.to_datetime(df['requested_date'])
-    df['booking_month'] = df['requested_date'].apply(lambda x: x.strftime('%Y-%m'))
-    df['Discount amount'].fillna(value = 0,inplace = True)
-    df['AMP'] = df['Amount'] - df['Discount amount'] -[x if x>0 else 0 for x in df['DM credits used']]
 
-    df = df[df['Status'].isin(['closed','service_complete'])]
+    df = df.apply(cancellation_slot, axis = 1)
 
-    df.set_index('Phone', inplace = True)
-    df['successful_bookings'] = df.groupby(level = 0)['requested_date'].count()
-    df.reset_index(inplace = True)
+    df[df['Status'] == 'cancelled'].groupby(['City','Booking cancel reason','cancel_slot'])['Booking ID'].count().to_csv('tmp.csv')
+
+
 
 
 
