@@ -1,6 +1,6 @@
 import pandas as pd
 import sys
-import pdb
+import ipdb
 import os
 import matplotlib.pyplot as plt
 
@@ -33,9 +33,15 @@ def f(bookings, pickup, city):
     ppvc1 = pickup[(pickup['Status'] == 'cancelled') & (~(pickup['booking_cancel_reason'].str.contains('stock_out').fillna(False))) & (pickup['Cancelled pickup visits'] == 1)]['Booking ID'].nunique()
     pickup_funnel['ppvc1'] = ppvc1
     ppvc1 = pickup[(pickup['Status'] == 'cancelled') & (~(pickup['booking_cancel_reason'].str.contains('stock_out').fillna(False))) & (pickup['Cancelled pickup visits'] == 1)]
-    ppvc1_breakup = ppvc1.groupby(['visit_cancel_reason'])['Booking ID'].nunique()
-    not_home = ppvc1[(ppvc1['visit_status'] == 'cancelled') & (ppvc1['visit_cancel_reason'].isin(['not_available_at_the_address ','Not available at the address ']))].groupby('updation_slot')['Booking ID'].nunique()
-    pickup_funnel = pickup_funnel.append([ppvc1_breakup,not_home])
+
+    ipdb.set_trace()
+    ppvc1_breakup = ppvc1.groupby(['visit_cancel_reason'])['Booking ID'].nunique().sort_values(ascending = False)
+    ppvc1_breakup_abridged = ppvc1_breakup[['not_opening_the_door','unfavourable_weather_conditions','not_able_to_locate_the_address','Others ','not_available_at_the_address']]
+    ppvc1_breakup_abridged['everything_else'] = ppvc1_breakup.sum()-ppvc1_breakup_abridged.sum()
+    not_home = ppvc1[(ppvc1['visit_status'] == 'cancelled') & (ppvc1['visit_cancel_reason'].isin(['not_available_at_the_address']))].groupby('updation_slot')['Booking ID'].nunique()
+    not_home = not_home.reindex(['cancelled_before_slot','t-t+1','t+1-t+2','>t+2'])
+    pickup_funnel = pickup_funnel.append(ppvc1_breakup_abridged)
+    pickup_funnel = pickup_funnel.append(not_home)
 
     #successful_visits_analysis
     success_visits = pickup[pickup['visit_status'] == 'done']
@@ -45,12 +51,16 @@ def f(bookings, pickup, city):
     within_slot_pickup = success_visits[(tmp2 > success_visits['requested_time']) & (tmp2 <= success_visits['requested_time'] + 2)]['Booking ID'].nunique()
     pickup_funnel['within_slot_pickup'] = within_slot_pickup
     outside_slot = success_visits[(tmp2 > success_visits['requested_time'] + 2)]
-    outside_slot_pickup = outside_slot.groupby('updation_slot')['Booking ID'].nunique()
-    outside_slot_creation = outside_slot.groupby('creation_slot')['Booking ID'].nunique()
+    outside_slot_pickup = outside_slot.groupby('updation_slot')['Booking ID'].nunique().reindex(['t+2-t+3','>t+3'])
+    outside_slot_creation = outside_slot.groupby('creation_slot')['Booking ID'].nunique().reindex(['<t','t to t+.5','t+.5 to t+1','>t+1'])
     pickup_funnel = pickup_funnel.append(outside_slot_pickup)
     pickup_funnel = pickup_funnel.append(outside_slot_creation)
+    bookings_with_1_visit = outside_slot[(outside_slot['creation_slot'] == '>t+1') & (outside_slot['Cancelled pickup visits'] == 0)]['Booking ID'].count()
+    pickup_funnel['bookings_with_creation_time>t+1_single_visit'] = bookings_with_1_visit
 
-    (pickup_funnel/float(requested)).to_csv('pickup_funnel_'+city+'.csv')
+    pickup_funnel = pickup_funnel/float(requested)
+    pickup_funnel['Requested_abs'] = requested
+    pickup_funnel.to_csv('pickup_funnel_'+city+'.csv')
 
     return
 
@@ -94,8 +104,8 @@ def updation_creation_slot(df):
 
 
 def main():
-    start_date = '9-jul-2016'
-    end_date = '15-jul-2016'
+    start_date = '30-jul-2016'
+    end_date = '5-aug-2016'
     bookings_file = sys.argv[1]
     pickup_file = sys.argv[2]
     bookings = pd.read_csv(bookings_file, skiprows = range(1,100000))
@@ -103,6 +113,14 @@ def main():
     pickup = pd.merge(pickup, bookings[['Booking ID','Status','Cancel reason','Booking cancel reason','Cancelled pickup visits']], on = 'Booking ID', how = 'inner')
 
     pickup.rename(columns = {'Requested Time':'requested_time','Requested date':'requested_date','Scheduled time':'scheduled_time','Updation time':'updation_time','Visit Creation time':'creation_time','Cancellation time':'cancellation_time','Visit cancellation reason':'visit_cancel_reason','Visit status':'visit_status','Cancel reason':'booking_cancel_reason'}, inplace = True)
+
+    #formatting the visit cancel reason to combine the same reasons under one heading
+    pickup['visit_cancel_reason'] = pickup['visit_cancel_reason'].str.replace('not.available.at.the.address.*','not_available_at_the_address', case = False)
+    pickup['visit_cancel_reason'] = pickup['visit_cancel_reason'].str.replace('.*geographical.*','out_of_geographical_area', case = False)
+    pickup['visit_cancel_reason'] = pickup['visit_cancel_reason'].str.replace('not.able.to.locate.*.address.*','not_able_to_locate_the_address', case = False)
+    pickup['visit_cancel_reason'] = pickup['visit_cancel_reason'].str.replace('not.opening.the.door.*','not_opening_the_door', case = False)
+    pickup['visit_cancel_reason'] = pickup['visit_cancel_reason'].str.replace('.*weather.*','unfavourable_weather_conditions', case = False)
+
 
     bookings['requested_date'] = pd.to_datetime(bookings['requested_date'])
 
@@ -118,7 +136,6 @@ def main():
 
     pickup = pickup.apply(updation_creation_slot, axis = 1)
     f(bookings[bookings['City'] == 'Mumbai'], pickup[pickup['City'] == 'Mumbai'], 'Mumbai')
-    #f(bookings[bookings['City'] == 'Bangalore'], pickup[pickup['City'] == 'Bangalore'], 'Bangalore')
 
 
 

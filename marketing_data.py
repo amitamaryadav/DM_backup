@@ -19,7 +19,7 @@ def marketing_master_booking_data(filename):
     column_to_use = ['total_revenue','Customer name','Email','Phone','Locality','City','Feedback','requested_date','Customer DMC','rating']
     df = pd.read_csv(filename)
     #getting set of non_cancelled bookings
-    df = df[(df['City'] <> 'Gurgaon')]
+    df = df[(df['City'] == 'Mumbai')]
     df['requested_date'] = pd.to_datetime(df['requested_date'], errors = 'coerce')
 
     #http://stackoverflow.com/questions/13703720/converting-between-datetime-timestamp-and-datetime64 - understanding difference between datetimes of python and pandas
@@ -36,7 +36,8 @@ def marketing_master_booking_data(filename):
                                 'No Booking in last 30 days':lambda x: (today - x.max()).days > 30,\
                                 'No Booking in last 45 days':lambda x: (today - x.max()).days > 45,\
                                 'No Booking in last 75 days':lambda x: (today - x.max()).days > 75,\
-                                'No Booking in last 60 days':lambda x: (today - x.max()).days > 60},\
+                                'No Booking in last 60 days':lambda x: (today - x.max()).days > 60,\
+                                'No Booking in last 90 days':lambda x: (today - x.max()).days > 90},\
                 'Customer DMC':{'Balance_DMC':'first'},\
                 'customer_segment':{'customer_segment':'first'}}
     
@@ -56,7 +57,6 @@ def main():
 
     option = sys.argv[1]
     filename = sys.argv[2:]
-    print option, filename
 
     if option == '--verify_nobooking_data':
         nobookings_data = pd.read_csv(filename[0])

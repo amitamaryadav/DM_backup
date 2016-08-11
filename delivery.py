@@ -7,8 +7,9 @@ import matplotlib.pyplot as plt
 
 def f(delivery, city):
     ofd = delivery[delivery['visit_status'] == 'done']['ofd_attempts'].sum()
-    delivery_funnel = pd.Series(ofd, index = ['ofd_visits'])
     not_ofd = delivery['Visit ID'].count() - ofd
+    delivery_funnel = pd.Series(ofd+not_ofd, index = ['total_visits'])
+    delivery_funnel['ofd_visits'] = ofd
     delivery_funnel['not_ofd_visits'] = not_ofd
     success = delivery[delivery['visit_status'] == 'done']['Booking ID'].nunique()
     delivery_funnel['successful_deliveries'] = success
@@ -18,12 +19,14 @@ def f(delivery, city):
     single_ofd_bookings = delivery[(delivery['visit_status'] == 'done') & (delivery['ofd_attempts'] == 1)]
     delivery_funnel['single_ofd'] = single_ofd_bookings['Booking ID'].nunique()
     delivery_funnel['without_slot'] = single_ofd_bookings[single_ofd_bookings['requested_date'].isnull()]['Booking ID'].nunique()
-    delivery_funnel = delivery_funnel.append(single_ofd_bookings[single_ofd_bookings['requested_date'].notnull()].groupby('updation_slot')['Booking ID'].nunique())
+    delivery_funnel = delivery_funnel.append(single_ofd_bookings[single_ofd_bookings['requested_date'].notnull()].groupby('updation_slot')['Booking ID'].nunique().reindex(['delivered_before_slot','t-t+1','t+1-t+2','t+2-t+3','t+3-t+4','>t+4']))
 
     multiple_ofd_bookings = delivery[(delivery['visit_status'] == 'done') & (delivery['ofd_attempts'] >1)]
     delivery_funnel['multiple_ofd'] = multiple_ofd_bookings['Booking ID'].nunique()
     delivery_funnel['without_slot_mulOFD'] = multiple_ofd_bookings[multiple_ofd_bookings['requested_date'].isnull()]['Booking ID'].nunique()
-    delivery_funnel = delivery_funnel.append(multiple_ofd_bookings[multiple_ofd_bookings['requested_date'].notnull()].groupby('updation_slot')['Booking ID'].nunique())
+    delivery_funnel = delivery_funnel.append(multiple_ofd_bookings[multiple_ofd_bookings['requested_date'].notnull()].groupby('updation_slot')['Booking ID'].nunique().reindex(['delivered_before_slot','t-t+1','t+1-t+2','t+2-t+3','t+3-t+4','>t+4']))
+
+    delivery_funnel['total_bookings'] = single_ofd_bookings['Booking ID'].nunique() + multiple_ofd_bookings['Booking ID'].nunique()
 
     return delivery_funnel
 
@@ -34,10 +37,10 @@ def updation_creation_slot(df):
             df['updation_slot'] = 'delivered_before_slot'
         elif (df['updation_time'] - df['requested_datetime']) <= pd.Timedelta('1 hours'):
             df['updation_slot'] = 't-t+1'
-        elif (df['updation_time'] - df['requested_datetime']) <= pd.Timedelta('2.25 hours'):
-            df['updation_slot'] = 't+1-t+2.25'
+        elif (df['updation_time'] - df['requested_datetime']) <= pd.Timedelta('2 hours'):
+            df['updation_slot'] = 't+1-t+2'
         elif (df['updation_time'] - df['requested_datetime']) <= pd.Timedelta('3 hours'):
-            df['updation_slot'] = 't+2.25-t+3'
+            df['updation_slot'] = 't+2-t+3'
         elif (df['updation_time'] - df['requested_datetime']) <= pd.Timedelta('4 hours'):
             df['updation_slot'] = 't+3-t+4'
         else:
@@ -48,10 +51,10 @@ def updation_creation_slot(df):
             df['updation_slot'] = 'cancelled_before_slot'
         elif (df['cancellation_time'] - df['requested_datetime']) <= pd.Timedelta('1 hours'):
             df['updation_slot'] = 't-t+1'
-        elif (df['cancellation_time'] - df['requested_datetime']) <= pd.Timedelta('2.25 hours'):
-            df['updation_slot'] = 't+1-t+2.25'
+        elif (df['cancellation_time'] - df['requested_datetime']) <= pd.Timedelta('2 hours'):
+            df['updation_slot'] = 't+1-t+2'
         else:
-            df['updation_slot'] = '>t+2.25'
+            df['updation_slot'] = '>t+2'
     '''
     tmp1 = df['creation_time'].hour + df['creation_time'].minute/60.0
     if tmp1 <= df['requested_time']:
@@ -68,8 +71,8 @@ def updation_creation_slot(df):
 
 
 def main():
-    date1 = '16-Jul-2016'
-    date2 = '22-jul-2016'
+    date1 = '30-Jul-2016'
+    date2 = '05-Aug-2016'
     delivery_file = sys.argv[1]
     delivery = pd.read_csv(delivery_file)
 

@@ -12,11 +12,10 @@ Input required - a file with all successful bookings with additional columns lik
 Output - excel file containg the NPS, cohorts, new_repeat behaviour
 '''
 
-
 def nps(filename):
     df = pd.read_csv(filename)
     #extracting only closed and service complete bookings
-    #df = df[df['Status'].isin(['service_complete','closed'])]
+    df = df[df['Status'].isin(['service_complete','closed'])]
     #converting 'requested_date to datetime column
     df['requested_date'] = pd.to_datetime(df['requested_date'])
 
@@ -30,7 +29,7 @@ def nps(filename):
     writer = pd.ExcelWriter(output_file)
     nps.to_excel(writer, sheet_name = 'nps')
     nps_city.to_excel(writer, sheet_name = 'nps_city')
-    
+
     #analyzing bad rating reason
     #total feedback to calculate percentage feedbacks in the bad feedback rating
     total_feedbacks = df.groupby('booking_month')['nps'].count()
@@ -81,14 +80,16 @@ def cohorts_cal(df,writer,cohort_type):
     cohort_to_excel(cohort_abs, writer, cohort_type+'_abs')
     cohort_to_excel(cohort_percentage, writer, cohort_type+'_%')
 
-    return 
+    return
 
 
 def cohorts(filename):
-    df = pd.read_csv(filename, low_memory = False) 
+    df = pd.read_csv(filename, low_memory = False)
+    #calculating only Mumbai cohorts
+    df = df[df['City'] == 'Mumbai']
     df['requested_date'] = pd.to_datetime(df['requested_date'])
 
-    df = df[df['booking_month'] <> '2016-07']
+    df = df[df['booking_month'] <> '2016-08']
 
     df.set_index('Phone',inplace = True)
     df['avg_feedback'] = df.groupby(level = 0)['Feedback'].mean()
@@ -110,21 +111,22 @@ def cohorts(filename):
 
     writer.save()
 
+    return
+
 
 def main():
-	option = sys.argv[1]
-        filename = sys.argv[2]
+    option = sys.argv[1]
+    filename = sys.argv[2]
+    if option == '--NPS':
+        nps(filename)
 
-        if option == '--NPS':
-            nps(filename)
+    elif option == '--cohorts':
+        cohorts(filename)
 
+    else:
+        print 'invalid option \n'
+        print 'usage : python filename.py {--NPS | --cohorts | --new_repeat} booking_data.csv'
 
-        elif option == '--cohorts':
-            cohorts(filename)
-
-        else: 
-            print 'invalid option \n'
-            print 'usage : python filename.py {--NPS | --cohorts | --new_repeat} booking_data.csv'
 
 
 if __name__ == '__main__':
