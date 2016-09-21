@@ -6,52 +6,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import ipdb
 
-'''http://www.gregreda.com/2015/08/23/cohort-analysis-with-python/
-followed the above article for cohort analysis.
-
-This is required once a month by core team
-
-Input required - a file with all successful bookings with additional columns like new_repeat, cohort_group already present
-Output - excel file containg the NPS, cohorts, new_repeat behaviour
-'''
-w1_start = pd.to_datetime('11-jul-2016')
-w1_end = pd.to_datetime('17-jul-2016')
-w2_start = pd.to_datetime('18-jul-2016')
-w2_end = pd.to_datetime('24-jul-2016')
-w3_start = pd.to_datetime('25-jul-2016')
-w3_end = pd.to_datetime('31-jul-2016')
-w4_start = pd.to_datetime('1-aug-2016')
-w4_end = pd.to_datetime('07-Aug-2016')
-w5_start = pd.to_datetime('8-aug-2016')
-w5_end = pd.to_datetime('14-Aug-2016')
-w6_start = pd.to_datetime('15-aug-2016')
-w6_end = pd.to_datetime('21-Aug-2016')
-w7_start = pd.to_datetime('22-aug-2016')
-w7_end = pd.to_datetime('28-Aug-2016')
-w8_start = pd.to_datetime('29-Aug-2016')
-w8_end = pd.to_datetime('04-Sep-2016')
-
 desktop = 'C:/users/amit/desktop'
-
-
-def week(df, col):
-    if (df[col] >=w1_start) & (df[col] <= w1_end):
-        df['week'] = 'W1'
-    elif (df[col]>=w2_start) & (df[col] <= w2_end):
-        df['week'] = 'W2'
-    elif (df[col] >=w3_start) & (df[col] <= w3_end):
-        df['week'] = 'W3'
-    elif (df[col] >=w4_start) & (df[col] <= w4_end):
-        df['week'] = 'W4'
-    elif (df[col]>=w5_start) & (df[col] <= w5_end):
-        df['week'] = 'W5'
-    elif (df[col] >=w6_start) & (df[col] <= w6_end):
-        df['week'] = 'W6'
-    elif (df[col] >=w7_start) & (df[col] <= w7_end):
-        df['week'] = 'W7'
-    else: df['week'] = 'W8'
-
-    return df
 
 
 def nps(filename):
@@ -96,16 +51,21 @@ def main():
     columns_to_use = ['Booking ID','City','requested_date','nps','Bad rating reason','booking_month']
     df = pd.read_csv(filename, usecols = columns_to_use, skiprows = range(1,50000))
 
-    #converting 'requested_date to datetime column
+    start_date = pd.to_datetime('10-jul-2016')
+    end_date = pd.to_datetime('10-aug-2016')
+
+    #only select data between start date and end date and City is MUMBAI
     df['requested_date'] = pd.to_datetime(df['requested_date'])
-    df = df[(df['requested_date'] >= w1_start) & (df['requested_date'] <=w8_end) & (df['City'] == 'Mumbai')]
-    df = df.apply(week, args=('requested_date',), axis = 1)
+    df = df[(df['requested_date'] >= start_date) & (df['requested_date'] <= end_date) & (df['City'] == 'Mumbai')]
+
+    #Apply week number
+    df['week'] = 'W'+df['requested_date'].dt.week.astype(str)
 
 
     sns.set(rc = {'figure.figsize': (20,10)})
-    #plt.figure(figsize=(1,1))
     #nps = df.groupby('week').agg({'nps':{'count','mean'}})
     nps = df.groupby('week')
+    ipdb.set_trace()
     nps_number = df.groupby(['week','nps'])['Booking ID'].count().divide(df.groupby('week')['nps'].count()).unstack(level = 1)
     nps_number['NPS'] = nps_number[1.0] - nps_number[-1.0]
     #nps.rename('NPS', inplace = True)
@@ -215,7 +175,6 @@ def main():
     feedback_reason.text(.7,.75,'W7 ='+w7_start.strftime('%d%b%y')+'-'+w7_end.strftime('%d%b%y')+', W8 ='+w8_start.strftime('%d%b%y')+'-'+w8_end.strftime('%d%b%y'),transform = feedback_reason.transAxes, ha='left',va='center',fontsize = 18)
     #plt.show()
     plt.savefig(os.path.join(desktop,'NPS_reasons_Logistics.png'))
-
     '''
     sns.set(rc = {'figure.figsize': (20,10)})
     bad_rating_reason = df[df['nps'] <> -1].groupby(['week','Bad rating reason'])['Booking ID'].count().divide(df.groupby('week')['Booking ID'].count()).unstack(level = 1)

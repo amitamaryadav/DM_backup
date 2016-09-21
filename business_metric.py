@@ -86,10 +86,11 @@ def cohorts_cal(df,writer,cohort_type):
 def cohorts(filename):
     df = pd.read_csv(filename, low_memory = False)
     #calculating only Mumbai cohorts
-    df = df[df['City'] == 'Mumbai']
+    df = df[df['City'] == 'Gurgaon']
     df['requested_date'] = pd.to_datetime(df['requested_date'])
 
-    df = df[df['booking_month'] <> '2016-08']
+    #df = df[df['booking_month'] <> '2016-09']
+    df = df[~df['cohort_group'].isin(['2016-09','2015-04','2015-05','2015-06','2015-07','2015-08'])]
 
     df.set_index('Phone',inplace = True)
     df['avg_feedback'] = df.groupby(level = 0)['Feedback'].mean()

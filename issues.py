@@ -86,7 +86,7 @@ def resolution_time(df):
     df = df[~df['L2 subtype'].isin(['Duplicate Booking','Feedback','Refund'])]
     df['L2 subtype'] = df['L2 subtype'].str.lower()
     df['Closed at'] = pd.to_datetime(df['Closed at'], dayfirst = True)
-    df2 = df[(df['Closed at'] >= w2_start) & (df['Closed at'] <= w4_end + pd.Timedelta('1 day')) & (df['Active'] == False)]
+    df2 = df[(df['Closed at'] >= w3_start) & (df['Closed at'] <= w4_end + pd.Timedelta('1 day')) & (df['Active'] == False)]
     #apply week numbers
     df2 = df2.apply(week, args = ('Closed at',), axis = 1)
     df2['Time taken to close(hours)'] = pd.to_numeric(df['Time taken to close(hours)'], errors = 'coerce')
@@ -106,19 +106,21 @@ def resolution_time(df):
     rt.tick_params(axis = 'x', labelsize = 12)
     rt.tick_params(axis = 'y', labelsize = 12)
     plt.tight_layout()
-    plt.savefig(os.path.join(desktop,'Resolution_times_distribution_by_L2Subtypes.png'))
+    #plt.savefig(os.path.join(desktop,'Resolution_times_distribution_by_L2Subtypes.png'))
+    plt.show()
 
     return
 
 def logistics_l3(df):
     df['Closed at'] = pd.to_datetime(df['Closed at'], dayfirst = True)
-    ipdb.set_trace()
     df = df[(df['Closed at'] >= w1_start) & (df['Closed at'] <= w4_end + pd.Timedelta('1 day')) & (df['Active'] == False)]
     #apply week numbers
     df = df.apply(week, args = ('Closed at',), axis = 1)
     df['L3 subtype'].replace({'Request for change in pick up time slot : early, late, reschedule':'change_time_slot','Pick up pending and was not done in the requested time slot':'pickup_not_in_requested_slot','Customer not available in the requested time slot':'cust._not_available'}, inplace = True)
     #taking only customer pickup issues
     pickup = df[(df['L2 subtype'] == 'pickup') & (df['FreshDesk/Internal'].notnull())]
+    #tmp code
+    pickup[pickup['L3 subtype'] == 'Others'].to_csv('pickup_Others_L3.csv')
     #pickup.replace({'change_time_slot':'A','pickup_not_in_requested_slot':'B','cust._not_available':'C','cancel booking':'D','Reschedule the pickup':'E','Priority pickup':'F','Pickup stock out':'G','Pickup request at different address':'H','Pickup boy number request':'I','Pickup boy complaints':'J','Out of geography':'K','Others':'L'}, inplace = True)
     #label = pd.Series(['','','','','','','','','','','',''], index = ['A=change_time_slot','B=pickup_not_in_requested_slot','C=cust._not_available','D=cancel booking','E=Reschedule the pickup','F=Priority Pickup','G=Pickup stock out', 'H=Pickup request at different address', 'I=Pickup boy number request', 'J=Pickup boy complaints', 'K=Out of geography', 'L=Others'])
     total = pd.Series([''], index = ['Total Pickup Issues'])
@@ -173,7 +175,7 @@ def quality_l3(df):
     sns.set(rc = {'figure.figsize': (25,13)})
     quality_L3 = quality.unstack(level = 1).plot.barh(stacked=True, legend = False)
     plt.legend(('Dry Cleaning','Wash and Iron Prime','Wash and Iron by weight'), fontsize = 18, loc = 'best')
-    label = pd.Series(['','','','','','','',''], index = ['A = Bad Packaging','B = Color Fade/color change','C = Linen/Embroidery damage','D = Post-process Stains','E = Shrinkage','F = Wet Clothes/Bad Smell','G = Others','I = Stains_not_removed'])
+    label = pd.Series(['','','','','','','','',''], index = ['A = Bad Packaging','B = Color Fade/color change','C = Linen/Embroidery damage','D = Post-process Stains','E = Shrinkage','F = Wet Clothes/Bad Smell','G = Ironing Issues','H = Others', 'I = Stains_not_removed'])
     plt.ylabel('L3_subtypes_quality_issues', fontsize = 18)
     plt.xlabel('Number of Quality Issues', fontsize = 18)
     plt.title('Quality Issues-L3 reason analysis', fontsize = 28)
@@ -189,14 +191,14 @@ def quality_l3(df):
     return
 
 
-w1_start = pd.to_datetime('9-jul-2016')
-w1_end = pd.to_datetime('15-jul-2016')
-w2_start = pd.to_datetime('16-jul-2016')
-w2_end = pd.to_datetime('22-jul-2016')
-w3_start = pd.to_datetime('23-jul-2016')
-w3_end = pd.to_datetime('29-jul-2016')
-w4_start = pd.to_datetime('30-jul-2016')
-w4_end = pd.to_datetime('5-Aug-2016')
+w1_start = pd.to_datetime('1-aug-2016')
+w1_end = pd.to_datetime('7-Aug-2016')
+w2_start = pd.to_datetime('8-Aug-2016')
+w2_end = pd.to_datetime('14-Aug-2016')
+w3_start = pd.to_datetime('15-Aug-2016')
+w3_end = pd.to_datetime('21-Aug-2016')
+w4_start = pd.to_datetime('22-Aug-2016')
+w4_end = pd.to_datetime('28-Aug-2016')
 
 desktop = 'c:/users/amit/desktop'
 
@@ -209,7 +211,7 @@ def main():
     df['L3 subtype'].replace({'Clothes not cleaned properly/Stain not removed':'stains_not_removed','Ironing issue-Poor finishing/iron marks/Lint':'ironing_issue'},inplace = True)
     df['Category'].replace({'Wash and Fold by weight':'Wash and Iron by weight'}, inplace = True)
 
-    FRT(df[df['City'] == 'Mumbai'])
+    #FRT(df[df['City'] == 'Mumbai'])
     resolution_time(df[df['City'] == 'Mumbai'])
     logistics_l3(df[df['City'] == 'Mumbai'])
     quality_l3(df[df['City'] == 'Mumbai'])

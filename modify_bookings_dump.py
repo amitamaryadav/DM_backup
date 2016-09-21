@@ -133,7 +133,7 @@ def main():
     merged_data_dump.to_csv(os.path.join(os.path.dirname(filename1),'output\merged_data_dump.csv'), index = True)
 
 
-    success = merged_data_dump[merged_data_dump['Status'].isin(['closed','service_complete','in_service'])]
+    success = merged_data_dump[merged_data_dump['Status'].isin(['closed','service_complete','in_service','payment_pending'])]
     #arbitraly adding a column with 'repeat_booking' string...would modify this to include new_booking tag
     success['new_repeat'] = 'repeat_booking'
 

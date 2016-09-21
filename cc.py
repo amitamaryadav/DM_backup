@@ -58,12 +58,12 @@ def modify_FRT(df):
 
 
 def FRT(df):
-    df['Ownership during close with'].replace({'CC_customers':'CC'}, inplace = True)
+    #df['Ownership during close with'].replace({'CC_customers':'CC'}, inplace = True)
 
     df['First response time (minutes)'] = pd.to_numeric(df['First response time (minutes)'], errors = 'coerce')
     df['Time of creation'] = pd.to_datetime(df['Time of creation'], errors = 'coerce', dayfirst = True)
     #selecting last 4 weeks
-    df = df[(df['Time of creation'] >= w1_start) & (df['Time of creation'] <= w4_end + pd.Timedelta('1 day'))]
+    df = df[(df['Time of creation'] >= w5_start) & (df['Time of creation'] <= w8_end + pd.Timedelta('1 day'))]
     #apply week numbers
     df = df.apply(week, args = ('Time of creation',), axis = 1)
     #modifying FRT for issues created in non_business hours
@@ -73,7 +73,7 @@ def FRT(df):
     df['First response time (minutes)'] = df['First response time (minutes)'] - (600*((tmp.dt.date-df['Time of creation'].dt.date)).dt.days) 
 
     #filtering only customer issues handled by CC
-    df1 = df[(df['FreshDesk/Internal'].notnull()) & ((df['Ownership during close with'].isin(['CC'])) | (df['Closed by'].isin(['barnana.goswami@doormint.in', 'joel.creado@doormint.in', 'khalid.kadri@doormint.in','krunaljoshib@gmail.com','monalisheth92@gmail.com', 'ompathak28@gmail.com', 'richiakre@gmail.com', 'rizwan.shaikh@doormint.in', 'sachin.yadav@doormint.in','madhushree.ramani@doormint.in'])))]
+    df1 = df[(df['FreshDesk/Internal'].notnull()) & (df['First response time (minutes)'].notnull())] 
 
     grouped = df1.groupby(['week'])
     total_issues = grouped['First response time (minutes)'].count()
@@ -91,8 +91,8 @@ def FRT(df):
     plt.ylabel('First Response Time (in minutes)', fontsize = 24)
     plt.xlabel('Week', fontsize = 24)
     plt.suptitle('Distribution of Response Time of Toolbox ISSUES', fontsize = 28)
-    frt.text(.9,.98,'W1 ='+w1_start.strftime('%d%b%y')+'-'+w1_end.strftime('%d%b%y')+', W2 ='+w2_start.strftime('%d%b%y')+'-'+w2_end.strftime('%d%b%y'), transform = frt.transAxes, ha='center', va='center', fontsize = 16, color = 'red')
-    frt.text(.9,.95,'W3 ='+w3_start.strftime('%d%b%y')+'-'+w3_end.strftime('%d%b%y')+', W4 ='+w4_start.strftime('%d%b%y')+'-'+w4_end.strftime('%d%b%y'), transform = frt.transAxes, ha='center', va='center', fontsize = 16, color = 'red')
+    frt.text(.9,.98,'W5 ='+w5_start.strftime('%d%b%y')+'-'+w5_end.strftime('%d%b%y')+', W6 ='+w6_start.strftime('%d%b%y')+'-'+w6_end.strftime('%d%b%y'), transform = frt.transAxes, ha='center', va='center', fontsize = 16, color = 'red')
+    frt.text(.9,.95,'W7 ='+w7_start.strftime('%d%b%y')+'-'+w7_end.strftime('%d%b%y')+', W8 ='+w8_start.strftime('%d%b%y')+'-'+w8_end.strftime('%d%b%y'), transform = frt.transAxes, ha='center', va='center', fontsize = 16, color = 'red')
     frt.text(.01,1.0, kpi, transform = frt.transAxes, ha='left', va='top', fontsize = 16, color = 'black')
     frt.tick_params(axis = 'x', labelsize = 18)
     plt.tight_layout()
@@ -102,27 +102,27 @@ def FRT(df):
 
 
 
-w1_start = pd.to_datetime('9-jul-2016')
-w1_end = pd.to_datetime('15-jul-2016')
-w2_start = pd.to_datetime('16-jul-2016')
-w2_end = pd.to_datetime('22-jul-2016')
-w3_start = pd.to_datetime('23-jul-2016')
-w3_end = pd.to_datetime('29-jul-2016')
-w4_start = pd.to_datetime('30-jul-2016')
-w4_end = pd.to_datetime('5-Aug-2016')
+w5_start = pd.to_datetime('8-Aug-2016')
+w5_end = pd.to_datetime('14-Aug-2016')
+w6_start = pd.to_datetime('15-Aug-2016')
+w6_end = pd.to_datetime('21-Aug-2016')
+w7_start = pd.to_datetime('22-Aug-2016')
+w7_end = pd.to_datetime('28-Aug-2016')
+w8_start = pd.to_datetime('29-Aug-2016')
+w8_end = pd.to_datetime('04-Sep-2016')
 
 desktop = 'c:/users/amit/desktop'
 
 
 
 def week(df, col):
-    if (df[col] >=w1_start) & (df[col] <= w1_end + pd.Timedelta('1 day')):
-        df['week'] = 'W1'
-    elif (df[col]>=w2_start) & (df[col] <= w2_end + pd.Timedelta('1 day')):
-        df['week'] = 'W2'
-    elif (df[col] >=w3_start) & (df[col] <= w3_end + pd.Timedelta('1 day')):
-        df['week'] = 'W3'
-    else: df['week'] = 'W4'
+    if (df[col] >=w5_start) & (df[col] <= w5_end + pd.Timedelta('1 day')):
+        df['week'] = 'W5'
+    elif (df[col]>=w6_start) & (df[col] <= w6_end + pd.Timedelta('1 day')):
+        df['week'] = 'W6'
+    elif (df[col] >=w7_start) & (df[col] <= w7_end + pd.Timedelta('1 day')):
+        df['week'] = 'W7'
+    else: df['week'] = 'W8'
 
     return df
 
@@ -141,10 +141,11 @@ def main():
     df['Status'].replace({'failed':'unsuccessful','no-answer':'unsuccessful','busy':'unsuccessful'}, inplace = True)
 
     #identifying calls where CC was involved and selecting 4 week period
-    cc_agent = [2230721203, 2230721204, 2230721205, 2230721207, 2230721211, 2230721212, 2230721217, 2230721219, 2230721221, 2230721224, 2230721228, 2230721226, 2230721220, 2230721232]
+    cc_agent = [2230721203, 2230721204, 2230721205, 2230721207, 2230721211, 2230721212, 2230721217, 2230721219, 2230721221, 2230721224, 2230721228, 2230721226, 2230721220, 2230721232, 9920091604, 8237246566, 7666356777, 9920535670, 9769797175, 9870896856, 9930796708, 9773603297, 9820798829]
     df = df[(df['Direction'] == 'inbound') | (df['From'].isin(cc_agent))]
+
     df['StartTime'] = pd.to_datetime(df['StartTime'])
-    df = df[(df['StartTime'] >= w1_start) & (df['StartTime'] <= w4_end + pd.Timedelta('1 day'))]
+    df = df[(df['StartTime'] >= w5_start) & (df['StartTime'] <= w8_end + pd.Timedelta('1 day'))]
 
     #introducing a new column 'Phone' which has customers phone number irrespective of inb or outbound calls
     df = df.apply(customer_phone, axis = 1)
@@ -168,8 +169,14 @@ def main():
     kpi = kpi.append((100*callback_20).round(1))
     kpi['Callback with 60 min'] = ''
     kpi = kpi.append((100*callback_60).round(1))
-    kpi['not_calledback'] = ''
-    kpi = kpi.append((100*no_callback).round(1))
+
+    overall = pd.Series('', index = ['Overall'])
+    overall['Missed_calls_%'] = ''
+    overall['(as fraction of Total Inbound)'] = ''
+    overall = overall.append(100*total_missed.groupby(level = 1).sum().div(df[df['Direction'] == 'inbound'].groupby('week')['Direction'].count()))
+    overall['not_calledback'] = ''
+    overall['(as a fraction of Total missed-calls)'] = ''
+    overall = overall.append((100*no_callback).round(1))
 
     df_with_callback = df[(df['callback_status'] <> 'no_callback') & (df['callback_status'].notnull())]
     df_with_callback.replace({'inb':'A','out_fail':'B','out_success':'C'}, inplace = True)
@@ -184,9 +191,10 @@ def main():
     plt.suptitle('Distribution of callback times for missed calls', fontsize = 28)
     plt.xlabel('Callback_Status', fontsize = 24)
     plt.ylabel('Callback-Time(in min)', fontsize = 24)
-    cb_time.text(.03,.98,'W1 ='+w1_start.strftime('%d%b%y')+'-'+w1_end.strftime('%d%b%y')+', W2 ='+w2_start.strftime('%d%b%y')+'-'+w2_end.strftime('%d%b%y'), transform = cb_time.transAxes, ha='left', va='center', fontsize = 16, color = 'red')
-    cb_time.text(.03,.95,'W3 ='+w3_start.strftime('%d%b%y')+'-'+w3_end.strftime('%d%b%y')+', W4 ='+w4_start.strftime('%d%b%y')+'-'+w4_end.strftime('%d%b%y'), transform = cb_time.transAxes, ha='left', va='center', fontsize = 16, color = 'red')
-    cb_time.text(.03,.92, kpi, transform = cb_time.transAxes, ha='left', va='top', fontsize = 16, color = 'black')
+    cb_time.text(.03,.98,'W5 ='+w5_start.strftime('%d%b%y')+'-'+w5_end.strftime('%d%b%y')+', W6 ='+w6_start.strftime('%d%b%y')+'-'+w6_end.strftime('%d%b%y'), transform = cb_time.transAxes, ha='left', va='center', fontsize = 16, color = 'red')
+    cb_time.text(.03,.95,'W7 ='+w7_start.strftime('%d%b%y')+'-'+w7_end.strftime('%d%b%y')+', W8 ='+w8_start.strftime('%d%b%y')+'-'+w8_end.strftime('%d%b%y'), transform = cb_time.transAxes, ha='left', va='center', fontsize = 16, color = 'red')
+    cb_time.text(.03,.92, overall , transform = cb_time.transAxes, ha='left', va='top', fontsize = 16, color = 'black')
+    cb_time.text(.3,.92, kpi, transform = cb_time.transAxes, ha='left', va='top', fontsize = 16, color = 'black')
     cb_time.legend(('A=Customer_called','B=Out_Fail','C=Out_Success'), loc = 'best', fontsize = 18)
     cb_time.tick_params(axis = 'x', labelsize = 18)
     plt.tight_layout()
@@ -207,8 +215,8 @@ def main():
     plt.xlabel('Call_Status', fontsize = 24)
     plt.ylabel('Handling Time (in min)', fontsize = 24)
     handling_time.tick_params(axis = 'x', labelsize = 18)
-    handling_time.text(.03,.98,'W1 ='+w1_start.strftime('%d%b%y')+'-'+w1_end.strftime('%d%b%y')+', W2 ='+w2_start.strftime('%d%b%y')+'-'+w2_end.strftime('%d%b%y'), transform = handling_time.transAxes, ha='left', va='center', fontsize = 16, color = 'red')
-    handling_time.text(.03,.95,'W3 ='+w3_start.strftime('%d%b%y')+'-'+w3_end.strftime('%d%b%y')+', W4 ='+w4_start.strftime('%d%b%y')+'-'+w4_end.strftime('%d%b%y'), transform = handling_time.transAxes, ha='left', va='center', fontsize = 16, color = 'red')
+    handling_time.text(.03,.98,'W5 ='+w5_start.strftime('%d%b%y')+'-'+w5_end.strftime('%d%b%y')+', W6 ='+w6_start.strftime('%d%b%y')+'-'+w6_end.strftime('%d%b%y'), transform = handling_time.transAxes, ha='left', va='center', fontsize = 16, color = 'red')
+    handling_time.text(.03,.95,'W7 ='+w7_start.strftime('%d%b%y')+'-'+w7_end.strftime('%d%b%y')+', W8 ='+w8_start.strftime('%d%b%y')+'-'+w8_end.strftime('%d%b%y'), transform = handling_time.transAxes, ha='left', va='center', fontsize = 16, color = 'red')
     handling_time.legend(('A=Inbound','B=Outbound','X=Completed_calls','Y=Unsuccessful_calls'), loc = 'best', fontsize = 18)
     plt.tight_layout()
     plt.savefig(os.path.join(desktop,'HandlingTime'))
